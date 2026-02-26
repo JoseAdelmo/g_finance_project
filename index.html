@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Financeiro</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="light-mode">
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-wallet"></i>
+                <h2>FinDash</h2>
+            </div>
+            <nav>
+                <ul>
+                    <li class="active"><a href="#"><i class="fa-solid fa-chart-pie"></i> Visão Geral</a></li>
+                    <li><a href="#transactions-panel"><i class="fa-solid fa-list"></i> Transações</a></li>
+                    <li><a href="#tips-panel"><i class="fa-solid fa-lightbulb"></i> Dicas</a></li>
+                </ul>
+            </nav>
+            <div class="theme-switch-wrapper">
+                <i class="fa-solid fa-sun"></i>
+                <label class="theme-switch" for="checkbox">
+                    <input type="checkbox" id="checkbox" />
+                    <div class="slider round"></div>
+                </label>
+                <i class="fa-solid fa-moon"></i>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header>
+                <div>
+                    <h1>Olá, <span id="user-name">Usuário</span> 👋</h1>
+                    <p class="subtitle">Aqui está o resumo das suas finanças.</p>
+                </div>
+                <!-- Profile / additional header items could go here -->
+            </header>
+
+            <!-- Summary Cards -->
+            <section class="summary-cards">
+                <div class="card income-card">
+                    <div class="card-header">
+                        <h3>Receitas</h3>
+                        <i class="fa-solid fa-arrow-trend-up"></i>
+                    </div>
+                    <p class="amount" id="total-income">R$ 0,00</p>
+                </div>
+                <div class="card expense-card">
+                    <div class="card-header">
+                        <h3>Despesas</h3>
+                        <i class="fa-solid fa-arrow-trend-down"></i>
+                    </div>
+                    <p class="amount" id="total-expense">R$ 0,00</p>
+                </div>
+                <div class="card balance-card">
+                    <div class="card-header">
+                        <h3>Saldo Atual</h3>
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <p class="amount" id="total-balance">R$ 0,00</p>
+                </div>
+            </section>
+
+            <!-- Main GridLayout for Chart and Transactions -->
+            <div class="grid-content">
+                <!-- Left Column -->
+                <div class="left-col">
+                    <!-- Chart Section -->
+                    <section class="chart-section panel">
+                        <div class="panel-header">
+                            <h3>Evolução Mensal</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="monthlyChart"></canvas>
+                        </div>
+                    </section>
+
+                    <!-- Tips Section -->
+                    <section class="tips-section panel" id="tips-panel">
+                        <div class="panel-header">
+                            <h3><i class="fa-solid fa-lightbulb" style="color: var(--warning-color);"></i> Insight
+                                Financeiro</h3>
+                        </div>
+                        <p id="tip-text">Adicione transações para receber dicas personalizadas sobre seus hábitos de
+                            consumo.</p>
+                    </section>
+                </div>
+
+                <!-- Right Column -->
+                <div class="right-col">
+                    <!-- Add Transaction Form -->
+                    <section class="add-transaction-section panel">
+                        <div class="panel-header">
+                            <h3>Nova Transação</h3>
+                        </div>
+                        <form id="transaction-form">
+                            <div class="form-group">
+                                <label for="type">Tipo</label>
+                                <select id="type" required>
+                                    <option value="income">Receita</option>
+                                    <option value="expense">Despesa</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Descrição</label>
+                                <input type="text" id="description" placeholder="Ex: Salário, Supermercado..." required
+                                    autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="amount">Valor (R$)</label>
+                                <input type="number" id="amount" step="0.01" min="0.01" placeholder="0.00" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="date">Data</label>
+                                <input type="date" id="date" required>
+                            </div>
+                            <button type="submit" class="btn-primary">Adicionar</button>
+                        </form>
+                    </section>
+
+                    <!-- Recent Transactions -->
+                    <section class="recent-transactions panel" id="transactions-panel">
+                        <div class="panel-header">
+                            <h3>Transações Recentes</h3>
+                        </div>
+                        <ul id="transaction-list" class="transaction-list">
+                            <!-- Transactions will be injected here via JS -->
+                        </ul>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
