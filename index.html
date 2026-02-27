@@ -13,6 +13,7 @@
 </head>
 
 <body class="light-mode">
+    <div id="overlay" class="overlay"></div>
     <div class="dashboard-container">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -40,9 +41,14 @@
         <!-- Main Content -->
         <main class="main-content">
             <header>
-                <div>
-                    <h1>Olá, <span id="user-name">Usuário</span> 👋</h1>
-                    <p class="subtitle">Aqui está o resumo das suas finanças.</p>
+                <div class="header-left">
+                    <button id="mobile-toggle" class="mobile-toggle">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div>
+                        <h1>Olá, <span id="user-name">Usuário</span> 👋</h1>
+                        <p class="subtitle">Aqui está o resumo das suas finanças.</p>
+                    </div>
                 </div>
                 <!-- Profile / additional header items could go here -->
             </header>

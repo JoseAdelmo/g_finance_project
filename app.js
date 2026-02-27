@@ -13,6 +13,9 @@ const totalBalanceEl = document.getElementById('total-balance');
 
 const tipTextEl = document.getElementById('tip-text');
 const tipsPanel = document.getElementById('tips-panel');
+const mobileToggle = document.getElementById('mobile-toggle');
+const sidebar = document.querySelector('.sidebar');
+const overlay = document.getElementById('overlay');
 
 let myChart;
 
@@ -328,8 +331,34 @@ document.querySelectorAll('nav ul li a').forEach(link => {
     link.addEventListener('click', function () {
         document.querySelectorAll('nav ul li').forEach(li => li.classList.remove('active'));
         this.parentElement.classList.add('active');
+
+        // Close sidebar on mobile after clicking a link
+        if (window.innerWidth <= 768) {
+            closeSidebar();
+        }
     });
 });
+
+// Mobile Sidebar Toggle Logic
+function toggleSidebar() {
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('show');
+    document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+}
+
+function closeSidebar() {
+    sidebar.classList.remove('active');
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+if (mobileToggle) {
+    mobileToggle.addEventListener('click', toggleSidebar);
+}
+
+if (overlay) {
+    overlay.addEventListener('click', closeSidebar);
+}
 
 // Run init
 init();

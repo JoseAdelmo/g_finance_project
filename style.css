@@ -452,6 +452,47 @@ header .subtitle {
     font-size: 0.9rem;
 }
 
+/* Mobile Toggle Button */
+.mobile-toggle {
+    display: none;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    width: 45px;
+    height: 45px;
+    border-radius: var(--border-radius-sm);
+    font-size: 1.2rem;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+/* Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 90;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.overlay.show {
+    display: block;
+    opacity: 1;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
     .grid-content {
@@ -461,8 +502,12 @@ header .subtitle {
 
 @media (max-width: 768px) {
     .sidebar {
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
+        left: calc(-1 * var(--sidebar-width));
+        transition: left 0.3s ease;
+    }
+
+    .sidebar.active {
+        left: 0;
     }
 
     .main-content {
@@ -470,5 +515,37 @@ header .subtitle {
         padding: 1.5rem;
     }
 
-    /* Can add hamburger menu logic to toggle sidebar if needed */
+    .mobile-toggle {
+        display: flex;
+    }
+
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    .summary-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-container {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        padding: 1rem;
+    }
+
+    header h1 {
+        font-size: 1.3rem;
+    }
+
+    .subtitle {
+        font-size: 0.85rem;
+    }
+
+    .card .amount {
+        font-size: 1.5rem;
+    }
 }
