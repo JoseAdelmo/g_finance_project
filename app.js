@@ -1,249 +1,221 @@
+// State
+let transactions = [];
+try {
+    transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+    transactions = transactions.filter(t => t && t.type && !isNaN(parseFloat(t.amount)));
+    transactions.forEach(t => t.amount = parseFloat(t.amount));
+} catch (e) {
+    transactions = [];
+}
+
+let myChart = null;
+
 // DOM Elements
-const toggleTheme = document.getElementById('checkbox');
-const form = document.getElementById('transaction-form');
-const typeInput = document.getElementById('type');
-const descriptionInput = document.getElementById('description');
-const amountInput = document.getElementById('amount');
-const dateInput = document.getElementById('date');
+const transactionForm = document.getElementById('transaction-form');
 const transactionList = document.getElementById('transaction-list');
-
 const totalIncomeEl = document.getElementById('total-income');
-const totalExpenseEl = document.getElementById('total-expense');
-const totalBalanceEl = document.getElementById('total-balance');
-
-const tipTextEl = document.getElementById('tip-text');
-const tipsPanel = document.getElementById('tips-panel');
+const totalExpensesEl = document.getElementById('total-expense');
+const balanceEl = document.getElementById('total-balance');
+const themeToggle = document.getElementById('checkbox');
 const mobileToggle = document.getElementById('mobile-toggle');
 const sidebar = document.querySelector('.sidebar');
 const overlay = document.getElementById('overlay');
 
-let myChart;
-
-// Data State
-let transactions = [];
-
-// Initialize App
+// Initialize
 function init() {
-    // Set default date to today
-    dateInput.valueAsDate = new Date();
-
-    // Theme logic
-    const currentTheme = localStorage.getItem('theme') ? localStorage.getItem('theme') : null;
-    if (currentTheme) {
-        document.body.classList.remove('light-mode', 'dark-mode');
-        document.body.classList.add(currentTheme);
-        if (currentTheme === 'dark-mode') {
-            toggleTheme.checked = true;
-        }
-    }
-
-    // Load transactions from local storage
-    const localStorageTransactions = JSON.parse(localStorage.getItem('transactions'));
-    if (localStorageTransactions !== null) {
-        transactions = localStorageTransactions;
-    }
-
-    updateDOM();
+    updateSummary();
+    renderTransactions();
     initChart();
+
+    // Theme setup
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (themeToggle) themeToggle.checked = true;
+    }
 }
 
-// Theme Toggle
-toggleTheme.addEventListener('change', function (e) {
-    if (e.target.checked) {
-        document.body.classList.replace('light-mode', 'dark-mode');
-        localStorage.setItem('theme', 'dark-mode');
-    } else {
-        document.body.classList.replace('dark-mode', 'light-mode');
-        localStorage.setItem('theme', 'light-mode');
-    }
-    // Update chart colors on theme change
-    if (myChart) {
-        myChart.destroy();
-        initChart();
-    }
-});
+// Update Summary Cards
+function updateSummary() {
+    const income = transactions
+        .filter(t => t.type === 'income')
+        .reduce((acc, t) => acc + t.amount, 0);
 
-// Format currency
+    const expenses = transactions
+        .filter(t => t.type === 'expense')
+        .reduce((acc, t) => acc + t.amount, 0);
+
+    const balance = income - expenses;
+
+    if (totalIncomeEl) totalIncomeEl.innerText = formatCurrency(income);
+    if (totalExpensesEl) totalExpensesEl.innerText = formatCurrency(expenses);
+    if (balanceEl) balanceEl.innerText = formatCurrency(balance);
+}
+
+// Format Currency
 function formatCurrency(amount) {
-    return amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    }).format(amount);
 }
 
-// Add transaction
-form.addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    const type = typeInput.value;
-    const description = descriptionInput.value.trim();
-    const amount = +parseFloat(amountInput.value).toFixed(2);
-    const date = dateInput.value;
-
-    if (description === '' || isNaN(amount) || amount <= 0) {
-        alert('Por favor, insira valores válidos.');
-        return;
-    }
-
-    const transaction = {
-        id: generateID(),
-        type,
-        description,
-        amount,
-        date
-    };
-
-    transactions.push(transaction);
-
-    // Update Local Storage & DOM
-    updateStorage();
-    updateDOM();
-    updateChart();
-
-    // Reset Form
-    descriptionInput.value = '';
-    amountInput.value = '';
-    dateInput.valueAsDate = new Date();
-});
-
-// Generate random ID
-function generateID() {
-    return Math.floor(Math.random() * 100000000);
-}
-
-// Delete transaction
-function deleteTransaction(id) {
-    transactions = transactions.filter(t => t.id !== id);
-    updateStorage();
-    updateDOM();
-    updateChart();
-}
-
-// Expose to window for inline onclick handler
-window.deleteTransaction = deleteTransaction;
-
-// Update storage
-function updateStorage() {
-    localStorage.setItem('transactions', JSON.stringify(transactions));
-}
-
-// Update DOM
-function updateDOM() {
-    // Clear list
+// Render Transactions
+function renderTransactions() {
+    if (!transactionList) return;
     transactionList.innerHTML = '';
 
     if (transactions.length === 0) {
         transactionList.innerHTML = '<li class="empty-state">Nenhuma transação registrada.</li>';
-    } else {
-        // Sort by date descending
-        const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        sortedTransactions.forEach(transaction => {
-            const li = document.createElement('li');
-            li.classList.add('transaction-item');
-
-            const isIncome = transaction.type === 'income';
-            const iconClass = isIncome ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
-            const sign = isIncome ? '+' : '-';
-
-            // Format date string to dd/mm/yyyy
-            const tDate = new Date(transaction.date + 'T00:00:00'); // append time to avoid timezone shift
-            const dateStr = tDate.toLocaleDateString('pt-BR');
-
-            li.innerHTML = `
-                <div class="transaction-info ${transaction.type}">
-                    <div class="transaction-icon">
-                        <i class="fa-solid ${iconClass}"></i>
-                    </div>
-                    <div class="transaction-details">
-                        <h4>${transaction.description}</h4>
-                        <p>${dateStr}</p>
-                    </div>
-                </div>
-                <div class="transaction-amount-action">
-                    <span class="t-amount ${transaction.type}">${sign} ${formatCurrency(transaction.amount)}</span>
-                    <button class="btn-delete" onclick="deleteTransaction(${transaction.id})">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-            `;
-            transactionList.appendChild(li);
-        });
-    }
-
-    // Update Totals
-    const amounts = transactions.map(t => ({ amount: t.amount, type: t.type }));
-
-    const income = amounts
-        .filter(item => item.type === 'income')
-        .reduce((acc, item) => (acc += item.amount), 0);
-
-    const expense = amounts
-        .filter(item => item.type === 'expense')
-        .reduce((acc, item) => (acc += item.amount), 0);
-
-    const balance = income - expense;
-
-    totalIncomeEl.innerText = formatCurrency(income);
-    totalExpenseEl.innerText = formatCurrency(expense);
-    totalBalanceEl.innerText = formatCurrency(balance);
-
-    // Update Financial Tip
-    generateTip(income, expense);
-}
-
-// Generate Tip
-function generateTip(income, expense) {
-    if (income === 0 && expense === 0) {
-        tipTextEl.innerText = "Adicione transações para receber dicas personalizadas sobre seus hábitos de consumo.";
-        tipsPanel.style.borderLeftColor = "var(--accent-primary)";
         return;
     }
 
-    if (income === 0 && expense > 0) {
-        tipTextEl.innerText = "Atenção: Você tem despesas registradas mas nenhuma receita. Cuidado para não estourar o limite!";
-        tipsPanel.style.borderLeftColor = "var(--danger-color)";
-        return;
-    }
+    const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    const expenseRatio = expense / income;
+    sortedTransactions.forEach(t => {
+        const li = document.createElement('li');
+        li.classList.add('transaction-item');
 
-    if (expenseRatio > 0.8) {
-        tipTextEl.innerText = "Alerta: Suas despesas ultrapassam 80% das suas receitas. Considere revisar seus gastos não essenciais para manter uma margem de segurança.";
-        tipsPanel.style.borderLeftColor = "var(--danger-color)";
-    } else if (expenseRatio > 0.5) {
-        tipTextEl.innerText = "Boa gestão: Suas despesas estão em um nível aceitável, mas tente guardar ao menos 20% do que ganha para criar uma reserva de emergência.";
-        tipsPanel.style.borderLeftColor = "var(--warning-color)";
-    } else {
-        tipTextEl.innerText = "Excelente! Seus gastos estão bem controlados em relação aos seus ganhos. Excelente oportunidade para investir o excedente!";
-        tipsPanel.style.borderLeftColor = "var(--success-color)";
+        const icon = t.type === 'income' ? 'fa-arrow-up' : 'fa-arrow-down';
+
+        li.innerHTML = `
+            <div class="transaction-info ${t.type}">
+                <div class="transaction-icon">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="transaction-details">
+                    <h4>${t.description}</h4>
+                    <p>${formatDate(t.date)}</p>
+                </div>
+            </div>
+            <div class="transaction-amount-action">
+                <span class="t-amount ${t.type}">
+                    ${formatCurrency(t.amount)}
+                </span>
+                <button class="btn-delete" onclick="deleteTransaction(${t.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        transactionList.appendChild(li);
+    });
+}
+
+// Format Date
+function formatDate(dateStr) {
+    try {
+        const d = new Date(dateStr + 'T00:00:00');
+        if (isNaN(d.getTime())) return 'Data inválida';
+        const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+        return d.toLocaleDateString('pt-BR', options);
+    } catch (e) {
+        return 'Data inválida';
     }
 }
 
-// Chart.js Setup
+// Add Transaction
+if (transactionForm) {
+    transactionForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const type = document.getElementById('type').value;
+        const description = document.getElementById('description').value;
+        const amountValue = document.getElementById('amount').value;
+        const date = document.getElementById('date').value;
+
+        const amount = parseFloat(amountValue);
+
+        if (!description || isNaN(amount) || !date) {
+            alert('Por favor, preencha todos os campos corretamente.');
+            return;
+        }
+
+        const newTransaction = {
+            id: Date.now(),
+            type,
+            description,
+            amount,
+            date
+        };
+
+        transactions.push(newTransaction);
+        saveAndRefresh();
+        transactionForm.reset();
+    });
+}
+
+// Delete Transaction
+window.deleteTransaction = function (id) {
+    if (confirm('Tem certeza que deseja excluir esta transação?')) {
+        transactions = transactions.filter(t => t.id !== id);
+        saveAndRefresh();
+    }
+};
+
+// Save to LocalStorage and Refresh UI
+function saveAndRefresh() {
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+    updateSummary();
+    renderTransactions();
+    updateChart();
+}
+
+// Theme Switcher
+if (themeToggle) {
+    themeToggle.addEventListener('change', () => {
+        if (themeToggle.checked) {
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('theme', 'light');
+        }
+
+        if (myChart) {
+            destroyAndReinitChart();
+        }
+    });
+}
+
+function destroyAndReinitChart() {
+    if (myChart) {
+        myChart.destroy();
+        initChart();
+    }
+}
+
+// Chart.js initialization
 function initChart() {
-    const ctx = document.getElementById('monthlyChart').getContext('2d');
-
+    const canvas = document.getElementById('monthlyChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     const isDark = document.body.classList.contains('dark-mode');
-    const textColor = isDark ? '#a3aed1' : '#a3aed1';
-    const gridColor = isDark ? '#1b254b' : '#e0e5f2';
 
-    // Group transactions by month for the chart
-    const chartData = getChartData();
+    const textColor = isDark ? '#a3aed1' : '#2b3674';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+
+    const data = getChartData();
+
+    if (myChart) myChart.destroy();
 
     myChart = new Chart(ctx, {
-        type: 'bar',
+        type: 'bar', // Restored to bar chart
         data: {
-            labels: chartData.labels,
+            labels: data.labels,
             datasets: [
                 {
                     label: 'Receitas',
-                    data: chartData.incomeData,
-                    backgroundColor: 'rgba(5, 205, 153, 0.8)',
-                    borderRadius: 4
+                    data: data.incomeData,
+                    backgroundColor: '#05cd99',
+                    borderRadius: 5,
+                    borderWidth: 0
                 },
                 {
                     label: 'Despesas',
-                    data: chartData.expenseData,
-                    backgroundColor: 'rgba(238, 93, 80, 0.8)',
-                    borderRadius: 4
+                    data: data.expenseData,
+                    backgroundColor: '#ee5d50',
+                    borderRadius: 5,
+                    borderWidth: 0
                 }
             ]
         },
@@ -252,19 +224,13 @@ function initChart() {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
+                    display: window.innerWidth > 480,
                     position: 'top',
-                    labels: { color: textColor }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            let label = context.dataset.label || '';
-                            if (label) { label += ': '; }
-                            if (context.parsed.y !== null) {
-                                label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
-                            }
-                            return label;
-                        }
+                    labels: {
+                        color: textColor,
+                        boxWidth: 12,
+                        padding: 10,
+                        font: { size: 11 }
                     }
                 }
             },
@@ -283,7 +249,13 @@ function initChart() {
 }
 
 function updateChart() {
-    if (!myChart) return;
+    if (!myChart) {
+        initChart();
+        return;
+    }
+
+    myChart.options.plugins.legend.display = window.innerWidth > 480;
+
     const data = getChartData();
     myChart.data.labels = data.labels;
     myChart.data.datasets[0].data = data.incomeData;
@@ -297,26 +269,22 @@ function getChartData() {
     }
 
     const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-
-    // Group by YYYY-MM
     const grouped = {};
 
     transactions.forEach(t => {
-        const d = new Date(t.date + 'T00:00:00');
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-
-        if (!grouped[key]) {
-            grouped[key] = { income: 0, expense: 0, sortKey: key, label: `${monthNames[d.getMonth()]} ${d.getFullYear()}` };
-        }
-
-        if (t.type === 'income') grouped[key].income += t.amount;
-        else grouped[key].expense += t.amount;
+        try {
+            const d = new Date(t.date + 'T00:00:00');
+            if (isNaN(d.getTime())) return;
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            if (!grouped[key]) {
+                grouped[key] = { income: 0, expense: 0, sortKey: key, label: `${monthNames[d.getMonth()]} ${d.getFullYear()}` };
+            }
+            if (t.type === 'income') grouped[key].income += t.amount;
+            else grouped[key].expense += t.amount;
+        } catch (e) { }
     });
 
-    // Sort chronologically
     const sortedKeys = Object.keys(grouped).sort();
-
-    // Take last 6 months
     const recentKeys = sortedKeys.slice(-6);
 
     const labels = recentKeys.map(k => grouped[k].label);
@@ -326,39 +294,36 @@ function getChartData() {
     return { labels, incomeData, expenseData };
 }
 
-// Sidebar nav - update active state on click
+// UI Event Listeners
 document.querySelectorAll('nav ul li a').forEach(link => {
     link.addEventListener('click', function () {
         document.querySelectorAll('nav ul li').forEach(li => li.classList.remove('active'));
         this.parentElement.classList.add('active');
-
-        // Close sidebar on mobile after clicking a link
-        if (window.innerWidth <= 768) {
-            closeSidebar();
-        }
+        if (window.innerWidth <= 1024) closeSidebar();
     });
 });
 
-// Mobile Sidebar Toggle Logic
 function toggleSidebar() {
+    if (!sidebar || !overlay) return;
     sidebar.classList.toggle('active');
     overlay.classList.toggle('show');
-    document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
 }
 
 function closeSidebar() {
+    if (!sidebar || !overlay) return;
     sidebar.classList.remove('active');
     overlay.classList.remove('show');
     document.body.style.overflow = '';
 }
 
-if (mobileToggle) {
-    mobileToggle.addEventListener('click', toggleSidebar);
-}
+if (mobileToggle) mobileToggle.addEventListener('click', toggleSidebar);
+if (overlay) overlay.addEventListener('click', closeSidebar);
 
-if (overlay) {
-    overlay.addEventListener('click', closeSidebar);
-}
+window.addEventListener('resize', () => {
+    if (myChart) {
+        myChart.options.plugins.legend.display = window.innerWidth > 480;
+        myChart.update('none');
+    }
+});
 
-// Run init
 init();

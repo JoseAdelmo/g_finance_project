@@ -45,6 +45,7 @@
 
 html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
 }
 
 * {
@@ -59,6 +60,7 @@ body {
     background-color: var(--bg-color);
     color: var(--text-primary);
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 .dashboard-container {
@@ -72,21 +74,21 @@ body {
     background-color: var(--sidebar-bg);
     position: fixed;
     height: 100vh;
+    left: 0;
+    top: 0;
     padding: 2rem;
     display: flex;
     flex-direction: column;
     border-right: 1px solid var(--border-color);
-    z-index: 100;
+    z-index: 1000;
     overflow-y: auto;
     scrollbar-width: none;
-    /* Firefox */
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
 }
 
 .sidebar::-webkit-scrollbar {
     display: none;
-    /* Chrome, Safari, Opera */
 }
-
 
 .logo {
     display: flex;
@@ -99,6 +101,8 @@ body {
 
 nav ul {
     list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
 nav ul li {
@@ -193,6 +197,8 @@ input:checked+.slider:before {
     flex: 1;
     margin-left: var(--sidebar-width);
     padding: 2rem 3rem;
+    width: 100%;
+    min-width: 0;
 }
 
 header {
@@ -360,9 +366,13 @@ header .subtitle {
 /* Transactions List */
 .transaction-list {
     list-style: none;
-    max-height: 350px;
+    max-height: 450px;
+    /* Increased max-height slightly */
     overflow-y: auto;
-    padding-right: 5px;
+    padding: 0.5rem !important;
+    /* Added padding to container for card shadows */
+    margin: 0 !important;
+    width: 100%;
 }
 
 /* Scrollbar styles */
@@ -379,12 +389,24 @@ header .subtitle {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border-color);
+    padding: 1rem;
+    background-color: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 0.8rem;
+    gap: 2rem;
+    /* Increased gap to prevent date and value from being too close */
+    transition: all 0.2s ease;
+}
+
+.transaction-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+    border-color: var(--accent-primary);
 }
 
 .transaction-item:last-child {
-    border-bottom: none;
+    margin-bottom: 0;
 }
 
 .transaction-info {
@@ -412,9 +434,18 @@ header .subtitle {
     color: var(--danger-color);
 }
 
+.transaction-details {
+    flex: 1;
+    /* Allow details to take up remaining space with a minimum gap */
+    min-width: 0;
+}
+
 .transaction-details h4 {
     font-size: 0.95rem;
     margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .transaction-details p {
@@ -455,10 +486,17 @@ header .subtitle {
 
 /* Emptystate */
 .empty-state {
-    text-align: center;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
     color: var(--text-secondary);
-    padding: 2rem 0;
+    padding: 3rem 1rem !important;
     font-size: 0.9rem;
+    width: 100% !important;
+    min-height: 100px;
+    list-style: none !important;
+    margin: 0 !important;
 }
 
 /* Mobile Toggle Button */
@@ -491,7 +529,7 @@ header .subtitle {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 90;
+    z-index: 900;
     display: none;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -502,38 +540,47 @@ header .subtitle {
     opacity: 1;
 }
 
+/* Responsividade de Imagens/Canvas */
+canvas {
+    max-width: 100%;
+}
+
 /* Responsive */
-@media (max-width: 1024px) {
+@media screen and (max-width: 1024px) {
     .grid-content {
         grid-template-columns: 1fr;
     }
-}
 
-@media (max-width: 768px) {
     .sidebar {
-        left: calc(-1 * var(--sidebar-width));
-        transition: left 0.3s ease;
+        transform: translateX(-100%);
+        visibility: hidden;
+        left: 0 !important;
         padding-bottom: 3rem;
-        /* Extra space at bottom for mobile nav bars */
-    }
-
-    .theme-switch-wrapper {
-        margin-top: 2rem;
-        background-color: var(--border-color);
-        /* Make it more distinct on mobile */
     }
 
     .sidebar.active {
-        left: 0;
+        transform: translateX(0);
+        visibility: visible;
     }
 
     .main-content {
-        margin-left: 0;
-        padding: 1.5rem;
+        margin-left: 0 !important;
+        padding: 2rem;
     }
 
     .mobile-toggle {
         display: flex;
+    }
+
+    .theme-switch-wrapper {
+        margin-top: 2rem;
+        background-color: var(--bg-color);
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .main-content {
+        padding: 1.5rem;
     }
 
     header h1 {
@@ -547,15 +594,24 @@ header .subtitle {
     .dashboard-container {
         flex-direction: column;
     }
+
+    .header-left {
+        gap: 1.2rem;
+    }
+
+    .header-left h1 {
+        margin-left: 0.5rem;
+    }
 }
 
-@media (max-width: 480px) {
+@media screen and (max-width: 480px) {
     .main-content {
         padding: 1rem;
     }
 
     header h1 {
         font-size: 1.3rem;
+        line-height: 1.2;
     }
 
     .subtitle {
@@ -564,5 +620,13 @@ header .subtitle {
 
     .card .amount {
         font-size: 1.5rem;
+    }
+
+    .panel {
+        padding: 1.2rem;
+    }
+
+    .tips-section p {
+        font-size: 0.9rem;
     }
 }
