@@ -25,7 +25,6 @@ const overlay = document.getElementById('overlay');
 function init() {
     updateSummary();
     renderTransactions();
-    initChart();
 
     // Theme setup
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -33,6 +32,8 @@ function init() {
         document.body.classList.add('dark-mode');
         if (themeToggle) themeToggle.checked = true;
     }
+
+    initChart();
 }
 
 // Update Summary Cards
@@ -191,7 +192,7 @@ function initChart() {
     const ctx = canvas.getContext('2d');
     const isDark = document.body.classList.contains('dark-mode');
 
-    const textColor = isDark ? '#a3aed1' : '#2b3674';
+    const textColor = isDark ? '#ffffff' : '#2b3674';
     const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
 
     const data = getChartData();
