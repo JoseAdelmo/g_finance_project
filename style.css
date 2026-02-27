@@ -77,7 +77,16 @@ body {
     flex-direction: column;
     border-right: 1px solid var(--border-color);
     z-index: 100;
+    overflow-y: auto;
+    scrollbar-width: none;
+    /* Firefox */
 }
+
+.sidebar::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari, Opera */
+}
+
 
 .logo {
     display: flex;
@@ -504,6 +513,14 @@ header .subtitle {
     .sidebar {
         left: calc(-1 * var(--sidebar-width));
         transition: left 0.3s ease;
+        padding-bottom: 3rem;
+        /* Extra space at bottom for mobile nav bars */
+    }
+
+    .theme-switch-wrapper {
+        margin-top: 2rem;
+        background-color: var(--border-color);
+        /* Make it more distinct on mobile */
     }
 
     .sidebar.active {
