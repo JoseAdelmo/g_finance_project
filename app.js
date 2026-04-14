@@ -34,6 +34,7 @@ function init() {
     }
 
     initChart();
+    generateInsight();
 }
 
 // Update Summary Cards
@@ -159,6 +160,79 @@ function saveAndRefresh() {
     updateSummary();
     renderTransactions();
     updateChart();
+    generateInsight();
+}
+
+// Generate Financial Insight
+function generateInsight() {
+    const tipEl = document.getElementById('tip-text');
+    if (!tipEl) return;
+
+    if (transactions.length === 0) {
+        tipEl.innerHTML = '💡 Adicione transações para receber dicas personalizadas sobre seus hábitos de consumo.';
+        return;
+    }
+
+    const income = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+    const expenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+    const balance = income - expenses;
+
+    // Aggregate expenses by keyword category
+    const categories = {};
+    transactions.filter(t => t.type === 'expense').forEach(t => {
+        const desc = t.description.toLowerCase();
+        let cat = 'Outros';
+        if (/aliment|mercado|supermerc|restau|lanche|comida|ifood/.test(desc)) cat = 'Alimentação';
+        else if (/trans|uber|gasolina|combustiv|ônibus|metro|carro|estacion/.test(desc)) cat = 'Transporte';
+        else if (/aluguel|condom|água|luz|energia|internet|telefon|celular/.test(desc)) cat = 'Moradia/Serviços';
+        else if (/saúde|médic|farmácia|plano|remédio|exame/.test(desc)) cat = 'Saúde';
+        else if (/lazer|cinema|show|viagem|hotel|entretenimento/.test(desc)) cat = 'Lazer';
+        else if (/roupa|calçado|vestuário|loja/.test(desc)) cat = 'Vestuário';
+        categories[cat] = (categories[cat] || 0) + t.amount;
+    });
+
+    const topCategory = Object.entries(categories).sort((a, b) => b[1] - a[1])[0];
+
+    const insights = [];
+
+    // Balance insight
+    if (balance < 0) {
+        insights.push(`🚨 <strong>Atenção:</strong> Suas despesas superam suas receitas em <strong>${formatCurrency(Math.abs(balance))}</strong>. Revise seus gastos com urgência.`);
+    } else if (income > 0 && expenses / income > 0.9) {
+        insights.push(`⚠️ Você está comprometendo <strong>${Math.round((expenses / income) * 100)}%</strong> da sua renda com despesas. Tente manter abaixo de 80%.`);
+    } else if (income > 0 && expenses / income < 0.5) {
+        insights.push(`🎉 Excelente! Você está gastando apenas <strong>${Math.round((expenses / income) * 100)}%</strong> da sua renda. Continue assim e invista o restante!`);
+    } else if (income > 0) {
+        insights.push(`📊 Você utilizou <strong>${Math.round((expenses / income) * 100)}%</strong> da sua renda este período. Tente economizar pelo menos 20%.`);
+    }
+
+    // Top category insight
+    if (topCategory) {
+        insights.push(`🏷️ Seu maior gasto está em <strong>${topCategory[0]}</strong>: <strong>${formatCurrency(topCategory[1])}</strong>. Avalie se há espaço para redução nessa categoria.`);
+    }
+
+    // Savings encouragement
+    if (balance > 0 && income > 0) {
+        const savingsRate = ((balance / income) * 100).toFixed(1);
+        insights.push(`💰 Você está guardando <strong>${savingsRate}%</strong> da sua renda (${formatCurrency(balance)}). Considere investir esse valor!`);
+    }
+
+    // Transaction volume
+    if (transactions.length >= 10) {
+        const avgExpense = expenses / transactions.filter(t => t.type === 'expense').length;
+        insights.push(`📉 Seu gasto médio por transação de despesa é <strong>${formatCurrency(avgExpense)}</strong>.`);
+    }
+
+    if (insights.length === 0) {
+        insights.push('💡 Continue registrando suas transações para receber insights personalizados.');
+    }
+
+    // Rotate insight on each refresh (cycle through available insights)
+    const stored = parseInt(localStorage.getItem('insightIndex') || '0');
+    const idx = stored % insights.length;
+    localStorage.setItem('insightIndex', (idx + 1) % insights.length);
+
+    tipEl.innerHTML = insights[idx];
 }
 
 // Theme Switcher
